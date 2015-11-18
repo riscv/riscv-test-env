@@ -196,24 +196,24 @@ void handle_trap(trapframe_t* tf)
   }
   else if (tf->cause == CAUSE_FAULT_LOAD || tf->cause == CAUSE_FAULT_STORE)
     handle_fault(tf->badvaddr);
-  else if ((long)tf->cause < 0 && (uint8_t)tf->cause == IRQ_COP)
-  {
-    if (tf->hwacha_cause == HWACHA_CAUSE_VF_FAULT_FETCH ||
-        tf->hwacha_cause == HWACHA_CAUSE_FAULT_LOAD ||
-        tf->hwacha_cause == HWACHA_CAUSE_FAULT_STORE)
-    {
-      long badvaddr = vxcptaux();
-      handle_fault(badvaddr);
-    }
-    else
-      assert(!"unexpected interrupt");
-  }
+  //else if ((long)tf->cause < 0 && (uint8_t)tf->cause == IRQ_COP)
+  //{
+  //  if (tf->hwacha_cause == HWACHA_CAUSE_VF_FAULT_FETCH ||
+  //      tf->hwacha_cause == HWACHA_CAUSE_FAULT_LOAD ||
+  //      tf->hwacha_cause == HWACHA_CAUSE_FAULT_STORE)
+  //  {
+  //    long badvaddr = vxcptaux();
+  //    handle_fault(badvaddr);
+  //  }
+  //  else
+  //    assert(!"unexpected interrupt");
+  //}
   else
     assert(!"unexpected exception");
 
 out:
-  if (!(tf->sr & SSTATUS_PS) && (tf->sr & SSTATUS_XS))
-    restore_vector(tf);
+  //if (!(tf->sr & SSTATUS_PS) && (tf->sr & SSTATUS_XS))
+  //  restore_vector(tf);
   pop_tf(tf);
 }
 
