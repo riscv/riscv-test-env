@@ -15,6 +15,8 @@
   .section ".text.init","ax",@progbits
   .globl _start
 _start:
+RVTEST_RV64M
+RVTEST_CODE_BEGIN
   j handle_reset
 
   /* NMI vector */
