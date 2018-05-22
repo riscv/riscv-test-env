@@ -11,7 +11,10 @@ SECTIONS
   .text : { *(.text) }
   . = ALIGN(0x1000);
   .data : { *(.data) }
+  . = ALIGN(8);
+  _bss_begin = .;
   .bss : { *(.bss) }
+  . = ALIGN(8);
   _end = .;
 }
 
