@@ -64,6 +64,10 @@
 1:
 
 #define INIT_SATP                                                      \
+  csrr t0, misa;    /* Check if S-mode is implemented ... */            \
+  srli t0, t0, 18;                                                      \
+  andi t0, t0, 1;                                                       \
+  beqz t0, 1f;      /* ... Skip this subroutine if it isn't */          \
   la t0, 1f;                                                            \
   csrw mtvec, t0;                                                       \
   csrwi sptbr, 0;                                                       \
@@ -73,9 +77,13 @@
 #define DELEGATE_NO_TRAPS                                               \
   la t0, 1f;                                                            \
   csrw mtvec, t0;                                                       \
-  csrwi medeleg, 0;                                                     \
-  csrwi mideleg, 0;                                                     \
-  csrwi mie, 0;                                                         \
+  csrr t0, misa;    /* Check if S-mode is implemented ... */            \
+  srli t0, t0, 18;                                                      \
+  andi t0, t0, 1;                                                       \
+  beqz t0, 2f;      /* ... Skip setting medeleg and mideleg if it   */  \
+  csrwi medeleg, 0; /* isn't, since they shouldn't exist without S- */  \
+  csrwi mideleg, 0; /* mode (or the N extension); see vol II pg 26  */  \
+2: csrwi mie, 0;                                                        \
   .align 2;                                                             \
 1:
 
@@ -149,6 +157,11 @@ reset_vector:                                                           \
         la t0, trap_vector;                                             \
         csrw mtvec, t0;                                                 \
         CHECK_XLEN;                                                     \
+        /* check if S-mode is implemented                            */ \
+        csrr t0, misa;                                                  \
+        srli t0, t0, 18;                                                \
+        andi t0, t0, 1;                                                 \
+        beqz t0, 1f;                                                    \
         /* if an stvec_handler is defined, delegate exceptions to it */ \
         la t0, stvec_handler;                                           \
         beqz t0, 1f;                                                    \
