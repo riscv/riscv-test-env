@@ -37,6 +37,7 @@ handle_reset:
   csrw mscratch, sp
   call extra_boot
   la a0, userstart
+  li fp,0
   j vm_boot
 
   .globl  pop_tf
