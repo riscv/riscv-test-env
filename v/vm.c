@@ -223,6 +223,9 @@ static void coherence_torture()
   }
 }
 
+extern uint8_t _bss_begin;
+extern uint8_t _end;
+
 void vm_boot(uintptr_t test_addr)
 {
   uint64_t random = ENTROPY;
@@ -230,6 +233,9 @@ void vm_boot(uintptr_t test_addr)
     coherence_torture();
 
   _Static_assert(SIZEOF_TRAPFRAME_T == sizeof(trapframe_t), "???");
+
+  // zero BSS
+  memset(&_bss_begin, 0, &_end - &_bss_begin);
 
 #if (MAX_TEST_PAGES > PTES_PER_PT) || (DRAM_BASE % MEGAPAGE_SIZE) != 0
 # error

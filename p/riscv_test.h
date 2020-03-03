@@ -9,6 +9,16 @@
 // Begin Macro
 //-----------------------------------------------------------------------
 
+#if __riscv_xlen == 64
+# define STORE    sd
+# define LOAD     ld
+# define REGBYTES 8
+#else
+# define STORE    sw
+# define LOAD     lw
+# define REGBYTES 4
+#endif
+
 #define RVTEST_RV64U                                                    \
   .macro init;                                                          \
   .endm
@@ -115,6 +125,14 @@
   csrr a0, mhartid;                                                     \
   1: bnez a0, 1b
 
+#define ZERO_BSS							\
+    la t0, _bss_begin;							\
+    la t1, _end;							\
+1:									\
+    STORE x0, (t0);							\
+    add t0, t0, REGBYTES;						\
+    blt t0, t1, 1b;							\
+
 #define EXTRA_TVEC_USER
 #define EXTRA_TVEC_MACHINE
 #define EXTRA_INIT
@@ -159,6 +177,7 @@ handle_exception:                                                       \
         j write_tohost;                                                 \
 reset_vector:                                                           \
         RISCV_MULTICORE_DISABLE;                                        \
+	ZERO_BSS;							\
         INIT_SATP;                                                     \
         INIT_PMP;                                                       \
         DELEGATE_NO_TRAPS;                                              \
