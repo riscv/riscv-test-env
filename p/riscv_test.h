@@ -160,7 +160,7 @@
         .align  6;                                                      \
         .weak stvec_handler;                                            \
         .weak mtvec_handler;                                            \
-        .globl _start;                                                  \
+        .global _start;                                                  \
 _start:                                                                 \
         /* reset vector */                                              \
         j reset_vector;                                                 \
