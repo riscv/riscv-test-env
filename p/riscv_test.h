@@ -140,6 +140,7 @@ handle_exception:                                                       \
   1:    ori TESTNUM, TESTNUM, 1337;                                     \
   write_tohost:                                                         \
         sw TESTNUM, tohost, t5;                                         \
+        fence;                                                          \
         j write_tohost;                                                 \
 reset_vector:                                                           \
         RISCV_MULTICORE_DISABLE;                                        \
