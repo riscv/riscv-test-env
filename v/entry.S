@@ -157,6 +157,7 @@ trap_entry:
   STORE  t0,34*REGBYTES(sp)
   csrr   t0,scause
   STORE  t0,35*REGBYTES(sp)
+  STORE  zero,36*REGBYTES(sp) # Intializing badgpaddr to 0 for now
 
   move  a0, sp
   j handle_trap

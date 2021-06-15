@@ -55,7 +55,7 @@ userstart:                                                              \
 #define PGSHIFT 12
 #define PGSIZE (1UL << PGSHIFT)
 
-#define SIZEOF_TRAPFRAME_T ((__riscv_xlen / 8) * 36)
+#define SIZEOF_TRAPFRAME_T ((__riscv_xlen / 8) * 37)
 
 #ifndef __ASSEMBLER__
 
@@ -74,6 +74,7 @@ typedef struct
   long epc;
   long badvaddr;
   long cause;
+  long badgpaddr; // For Bad GPA on guest faults
 } trapframe_t;
 #endif
 
