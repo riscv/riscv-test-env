@@ -58,9 +58,9 @@
   .endm
 
 #if __riscv_xlen == 64
-# define CHECK_XLEN li a0, 1; slli a0, a0, 31; bgez a0, 1f; RVTEST_PASS; 1:
+# define CHECK_XLEN li a0, 1; slli a0, a0, 31; bgez a0, 2f; li TESTNUM, 1; RVTEST_FAIL; 2:
 #else
-# define CHECK_XLEN li a0, 1; slli a0, a0, 31; bltz a0, 1f; RVTEST_PASS; 1:
+# define CHECK_XLEN li a0, 1; slli a0, a0, 31; bltz a0, 2f; li TESTNUM, 1; RVTEST_FAIL; 2:
 #endif
 
 #define INIT_XREG                                                       \
