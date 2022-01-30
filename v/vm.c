@@ -120,7 +120,7 @@ static void evict(unsigned long addr)
     uintptr_t sstatus = set_csr(sstatus, SSTATUS_SUM);
     if (memcmp((void*)addr, uva2kva(addr), PGSIZE)) {
       assert(user_llpt[addr/PGSIZE] & PTE_D);
-      memcpy((void*)addr, uva2kva(addr), PGSIZE);
+      memcpy(uva2kva(addr), (void*)addr, PGSIZE);
     }
     write_csr(sstatus, sstatus);
 
