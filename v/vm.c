@@ -6,6 +6,8 @@
 
 #include "riscv_test.h"
 
+#define Sv48
+
 #if __riscv_xlen == 32
 # define SATP_MODE_CHOICE SATP_MODE_SV32
 #elif defined(Sv48)
@@ -136,8 +138,15 @@ static void evict(unsigned long addr)
   }
 }
 
-void handle_fault(uintptr_t addr, uintptr_t cause)
+void handle_fault(uintptr_t addr, uintptr_t cause, trapframe_t* tf)
 {
+  cputstring("\nhandle_fault for address and PC : ");
+  cputstring("\n");
+  printhex(addr);
+  cputstring("\n");
+  printhex(tf->epc);
+  int copy_page = 1;
+
   assert(addr >= PGSIZE && addr < MAX_TEST_PAGES * PGSIZE);
   addr = addr/PGSIZE*PGSIZE;
 
@@ -159,20 +168,37 @@ void handle_fault(uintptr_t addr, uintptr_t cause)
     freelist_tail = 0;
 
   uintptr_t new_pte = (node->addr >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V | PTE_U | PTE_R | PTE_W | PTE_X;
+
+  if (cause == CAUSE_STORE_PAGE_FAULT) {
+    //cputstring("Store fault\n");
+    uintptr_t prev_sstatus = set_csr(sstatus, SSTATUS_SUM);
+    if (*(int*)tf->epc == 0x81c0c073) { // if it's a sspush x1
+      cputstring("Store fault on sspush, new pte is: ");
+      new_pte = (node->addr >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V | PTE_U | PTE_W;
+      copy_page = 0; /* shadow stack page don't need a copy */
+      printhex(new_pte);
+      cputstring("\n");
+    }
+    write_csr(sstatus, prev_sstatus);
+  }
+
   user_llpt[addr/PGSIZE] = new_pte | PTE_A | PTE_D;
   flush_page(addr);
 
   assert(user_mapping[addr/PGSIZE].addr == 0);
   user_mapping[addr/PGSIZE] = *node;
 
-  uintptr_t sstatus = set_csr(sstatus, SSTATUS_SUM);
-  memcpy((void*)addr, uva2kva(addr), PGSIZE);
-  write_csr(sstatus, sstatus);
+  if (copy_page) {
+    uintptr_t sstatus = set_csr(sstatus, SSTATUS_SUM);
+    memcpy((void*)addr, uva2kva(addr), PGSIZE);
+    write_csr(sstatus, sstatus);
+  }
 
   user_llpt[addr/PGSIZE] = new_pte;
   flush_page(addr);
 
   asm volatile ("fence.i");
+  cputstring("returning from handle_fault\n");
 }
 
 void handle_trap(trapframe_t* tf)
@@ -200,7 +226,7 @@ void handle_trap(trapframe_t* tf)
     tf->epc += 4;
   }
   else if (tf->cause == CAUSE_FETCH_PAGE_FAULT || tf->cause == CAUSE_LOAD_PAGE_FAULT || tf->cause == CAUSE_STORE_PAGE_FAULT)
-    handle_fault(tf->badvaddr, tf->cause);
+    handle_fault(tf->badvaddr, tf->cause, tf);
   else
     assert(!"unexpected exception");
 
@@ -225,6 +251,7 @@ static void coherence_torture()
 
 void vm_boot(uintptr_t test_addr)
 {
+  cputstring ("Entered vm_boot \n");
   uint64_t random = ENTROPY;
   if (read_csr(mhartid) > 0)
     coherence_torture();
