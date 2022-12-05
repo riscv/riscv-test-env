@@ -153,6 +153,8 @@
 #define EXTRA_TVEC_MACHINE
 #define EXTRA_INIT
 #define EXTRA_INIT_TIMER
+#define FILTER_TRAP
+#define FILTER_PAGE_FAULT
 
 #define INTERRUPT_HANDLER j other_exception /* No interrupts should occur */
 

@@ -138,6 +138,8 @@ static void evict(unsigned long addr)
   }
 }
 
+extern int pf_filter(uintptr_t addr, uintptr_t *pte, int *copy);
+
 void handle_fault(uintptr_t addr, uintptr_t cause, trapframe_t* tf)
 {
   cputstring("\nhandle_fault for address and PC : ");
@@ -146,6 +148,7 @@ void handle_fault(uintptr_t addr, uintptr_t cause, trapframe_t* tf)
   cputstring("\n");
   printhex(tf->epc);
   int copy_page = 1;
+  uintptr_t filter_encodings = 0;
 
   assert(addr >= PGSIZE && addr < MAX_TEST_PAGES * PGSIZE);
   addr = addr/PGSIZE*PGSIZE;
@@ -169,17 +172,9 @@ void handle_fault(uintptr_t addr, uintptr_t cause, trapframe_t* tf)
 
   uintptr_t new_pte = (node->addr >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V | PTE_U | PTE_R | PTE_W | PTE_X;
 
-  if (cause == CAUSE_STORE_PAGE_FAULT) {
-    //cputstring("Store fault\n");
-    uintptr_t prev_sstatus = set_csr(sstatus, SSTATUS_SUM);
-    if (*(int*)tf->epc == 0x81c0c073) { // if it's a sspush x1
-      cputstring("Store fault on sspush, new pte is: ");
-      new_pte = (node->addr >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V | PTE_U | PTE_W;
-      copy_page = 0; /* shadow stack page don't need a copy */
-      printhex(new_pte);
-      cputstring("\n");
-    }
-    write_csr(sstatus, prev_sstatus);
+  if (pf_filter(addr, &filter_encodings, &copy_page)) {
+      cputstring("pf_filter returned true\n");
+      new_pte = (node->addr >> PGSHIFT << PTE_PPN_SHIFT) | filter_encodings;
   }
 
   user_llpt[addr/PGSIZE] = new_pte | PTE_A | PTE_D;
@@ -215,13 +210,12 @@ void handle_trap(trapframe_t* tf)
   else if (tf->cause == CAUSE_ILLEGAL_INSTRUCTION)
   {
     assert(tf->epc % 4 == 0);
-
+    int faulting_opcode = read_csr(stval);
     int* fssr;
     asm ("jal %0, 1f; fssr x0; 1:" : "=r"(fssr));
-
-    if (*(int*)tf->epc == *fssr)
+    if (faulting_opcode == *fssr)
       terminate(1); // FP test on non-FP hardware.  "succeed."
-    else
+    else 
       assert(!"illegal instruction");
     tf->epc += 4;
   }
@@ -253,6 +247,8 @@ void vm_boot(uintptr_t test_addr)
 {
   cputstring ("Entered vm_boot \n");
   uint64_t random = ENTROPY;
+  unsigned int m_status = 0;
+
   if (read_csr(mhartid) > 0)
     coherence_torture();
 
@@ -304,9 +300,13 @@ void vm_boot(uintptr_t test_addr)
     (1 << CAUSE_USER_ECALL) |
     (1 << CAUSE_FETCH_PAGE_FAULT) |
     (1 << CAUSE_LOAD_PAGE_FAULT) |
-    (1 << CAUSE_STORE_PAGE_FAULT));
+    (1 << CAUSE_STORE_PAGE_FAULT) |
+    (1 << CAUSE_ILLEGAL_INSTRUCTION));
+
+  m_status = read_csr(mstatus);
   // FPU on; accelerator on; vector unit on
-  write_csr(mstatus, MSTATUS_FS | MSTATUS_XS | MSTATUS_VS);
+  m_status |= (MSTATUS_FS | MSTATUS_XS | MSTATUS_VS);
+  write_csr(mstatus, m_status);
   write_csr(mie, 0);
 
   random = 1 + (random % MAX_TEST_PAGES);
