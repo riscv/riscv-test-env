@@ -139,6 +139,7 @@ static void evict(unsigned long addr)
 }
 
 extern int pf_filter(uintptr_t addr, uintptr_t *pte, int *copy);
+extern int trap_filter(trapframe_t *tf);
 
 void handle_fault(uintptr_t addr, uintptr_t cause, trapframe_t* tf)
 {
@@ -198,6 +199,11 @@ void handle_fault(uintptr_t addr, uintptr_t cause, trapframe_t* tf)
 
 void handle_trap(trapframe_t* tf)
 {
+  if (trap_filter(tf)) {
+    cputstring("trap_filter returned true\n");
+    pop_tf(tf);
+  }
+
   if (tf->cause == CAUSE_USER_ECALL)
   {
     int n = tf->gpr[10];
