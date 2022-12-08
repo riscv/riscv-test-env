@@ -200,7 +200,20 @@ void handle_fault(uintptr_t addr, uintptr_t cause, trapframe_t* tf)
 void handle_trap(trapframe_t* tf)
 {
   if (trap_filter(tf)) {
-    cputstring("trap_filter returned true\n");
+    cputstring("trap_filter returned true, trap cause \n");
+    printhex(tf->cause);
+    /*
+    * trap_filter returning true and
+    * cause being ecall means, one of the test went wrong
+    */
+    if (tf->cause == CAUSE_USER_ECALL) {
+      cputstring("\nTest failed test # ");
+      printhex(tf->gpr[3]); /* x3 holds testnum */
+      cputstring("\nEPC # ");
+      printhex(tf->epc);
+      cputstring("\nt1/x6 val ");
+      terminate(0xbaddeed);
+    }
     pop_tf(tf);
   }
 
@@ -307,6 +320,8 @@ void vm_boot(uintptr_t test_addr)
     (1 << CAUSE_FETCH_PAGE_FAULT) |
     (1 << CAUSE_LOAD_PAGE_FAULT) |
     (1 << CAUSE_STORE_PAGE_FAULT) |
+    (1 << CAUSE_STORE_ACCESS) |
+    (1 << CAUSE_LOAD_ACCESS) |
     (1 << CAUSE_ILLEGAL_INSTRUCTION));
 
   m_status = read_csr(mstatus);
