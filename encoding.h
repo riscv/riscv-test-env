@@ -22,6 +22,13 @@
 #define MSTATUS_TVM         0x00100000
 #define MSTATUS_TW          0x00200000
 #define MSTATUS_TSR         0x00400000
+#define MSTATUS_UFCFIEN     0x00800000 /* Zisslpcfi-.01 */
+#define MSTATUS_SFCFIEN     0x01000000 /* Zisslpcfi-.01 */
+#define MSTATUS_MFCFIEN     0x02000000 /* Zisslpcfi-.01 */
+#define MSTATUS_UBCFIEN     0x04000000 /* Zisslpcfi-.01 */
+#define MSTATUS_SBCFIEN     0x08000000 /* Zisslpcfi-.01 */
+#define MSTATUS_SPELP       0x10000000 /* Zisslpcfi-.01 */
+#define MSTATUS_MPELP       0x20000000 /* Zisslpcfi-.01 */
 #define MSTATUS32_SD        0x80000000
 #define MSTATUS_UXL         0x0000000300000000
 #define MSTATUS_SXL         0x0000000C00000000
@@ -37,6 +44,11 @@
 #define SSTATUS_XS          0x00018000
 #define SSTATUS_SUM         0x00040000
 #define SSTATUS_MXR         0x00080000
+#define SSTATUS_UFCFIEN     MSTATUS_UFCFIEN /* Zisslpcfi-.01 */
+#define SSTATUS_SFCFIEN     MSTATUS_SFCFIEN /* Zisslpcfi-.01 */
+#define SSTATUS_UBCFIEN     MSTATUS_UBCFIEN /* Zisslpcfi-.01 */
+#define SSTATUS_SBCFIEN     MSTATUS_SFCFIEN /* Zisslpcfi-.01 */
+#define SSTATUS_SPELP       MSTATUS_SPELP   /* Zisslpcfi-.01 */
 #define SSTATUS32_SD        0x80000000
 #define SSTATUS_UXL         0x0000000300000000
 #define SSTATUS64_SD        0x8000000000000000
@@ -114,6 +126,14 @@
 
 #define SIP_SSIP MIP_SSIP
 #define SIP_STIP MIP_STIP
+
+/* CFI CSR bits */
+#define CFISTATUS_M_MASK    (MSTATUS_MFCFIEN |  MSTATUS_SFCFIEN | MSTATUS_SBCFIEN | \
+                             MSTATUS_UFCFIEN |  MSTATUS_UBCFIEN | MSTATUS_MPELP | \
+                             MSTATUS_SPELP)
+#define CFISTATUS_S_MASK    (SSTATUS_SFCFIEN | SSTATUS_SBCFIEN | SSTATUS_UFCFIEN | \
+                             SSTATUS_UBCFIEN | SSTATUS_SPELP)
+#define MENVCFG_CFI         (1UL<<60)
 
 #define PRV_U 0
 #define PRV_S 1
@@ -1586,15 +1606,19 @@
 #define CSR_USTATUS 0x0
 #define CSR_UIE 0x4
 #define CSR_UTVEC 0x5
+#define CSR_LPLR 0x6
 #define CSR_VSTART 0x8
 #define CSR_VXSAT 0x9
 #define CSR_VXRM 0xa
 #define CSR_VCSR 0xf
+#define CSR_SSP 0x20
 #define CSR_USCRATCH 0x40
 #define CSR_UEPC 0x41
 #define CSR_UCAUSE 0x42
 #define CSR_UTVAL 0x43
 #define CSR_UIP 0x44
+#define CSR_MENVCFG 0x30A
+#define CSR_HENVCFG 0x60A
 #define CSR_CYCLE 0xc00
 #define CSR_TIME 0xc01
 #define CSR_INSTRET 0xc02
@@ -2812,6 +2836,7 @@ DECLARE_CSR(mhpmcounter28h, CSR_MHPMCOUNTER28H)
 DECLARE_CSR(mhpmcounter29h, CSR_MHPMCOUNTER29H)
 DECLARE_CSR(mhpmcounter30h, CSR_MHPMCOUNTER30H)
 DECLARE_CSR(mhpmcounter31h, CSR_MHPMCOUNTER31H)
+DECLARE_CSR(ussp, CSR_USSP)
 #endif
 #ifdef DECLARE_CAUSE
 DECLARE_CAUSE("misaligned fetch", CAUSE_MISALIGNED_FETCH)

@@ -6,6 +6,8 @@
 
 #include "riscv_test.h"
 
+#define Sv48
+
 #if __riscv_xlen == 32
 # define SATP_MODE_CHOICE SATP_MODE_SV32
 #elif defined(Sv48)
@@ -136,8 +138,19 @@ static void evict(unsigned long addr)
   }
 }
 
-void handle_fault(uintptr_t addr, uintptr_t cause)
+extern int pf_filter(uintptr_t addr, uintptr_t *pte, int *copy);
+extern int trap_filter(trapframe_t *tf);
+
+void handle_fault(uintptr_t addr, uintptr_t cause, trapframe_t* tf)
 {
+  cputstring("\nhandle_fault for address and PC : ");
+  cputstring("\n");
+  printhex(addr);
+  cputstring("\n");
+  printhex(tf->epc);
+  int copy_page = 1;
+  uintptr_t filter_encodings = 0;
+
   assert(addr >= PGSIZE && addr < MAX_TEST_PAGES * PGSIZE);
   addr = addr/PGSIZE*PGSIZE;
 
@@ -159,24 +172,61 @@ void handle_fault(uintptr_t addr, uintptr_t cause)
     freelist_tail = 0;
 
   uintptr_t new_pte = (node->addr >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V | PTE_U | PTE_R | PTE_W | PTE_X;
+
+  if (pf_filter(addr, &filter_encodings, &copy_page)) {
+      cputstring("pf_filter returned true\n");
+      new_pte = (node->addr >> PGSHIFT << PTE_PPN_SHIFT) | filter_encodings;
+  }
+
   user_llpt[addr/PGSIZE] = new_pte | PTE_A | PTE_D;
   flush_page(addr);
 
   assert(user_mapping[addr/PGSIZE].addr == 0);
   user_mapping[addr/PGSIZE] = *node;
 
-  uintptr_t sstatus = set_csr(sstatus, SSTATUS_SUM);
-  memcpy((void*)addr, uva2kva(addr), PGSIZE);
-  write_csr(sstatus, sstatus);
+  if (copy_page) {
+    uintptr_t sstatus = set_csr(sstatus, SSTATUS_SUM);
+    memcpy((void*)addr, uva2kva(addr), PGSIZE);
+    write_csr(sstatus, sstatus);
+  }
 
   user_llpt[addr/PGSIZE] = new_pte;
   flush_page(addr);
 
   asm volatile ("fence.i");
+  cputstring("returning from handle_fault\n");
 }
 
 void handle_trap(trapframe_t* tf)
 {
+  if (trap_filter(tf)) {
+    cputstring("trap_filter returned true, trap cause ");
+    printhex(tf->cause);
+    cputstring("\n epc ");
+    printhex(tf->epc);
+    cputstring("\n");
+    /*
+    * trap_filter returning true and
+    * cause being ecall means, one of the test went wrong
+    */
+    if (tf->cause == CAUSE_USER_ECALL) {
+      cputstring("\nTest failed test # ");
+      printhex(tf->gpr[3]); /* x3 holds testnum */
+      cputstring("\nEPC # ");
+      printhex(tf->epc);
+      cputstring("\nt1/x6 val ");
+      terminate(0xbaddeed);
+    }
+    pop_tf(tf);
+  } else {
+    cputstring("! trap_filter returned false, trap cause ");
+    printhex(tf->cause);
+    cputstring("\n epc ");
+    printhex(tf->epc);
+    cputstring("\n");
+
+  }
+
   if (tf->cause == CAUSE_USER_ECALL)
   {
     int n = tf->gpr[10];
@@ -189,18 +239,17 @@ void handle_trap(trapframe_t* tf)
   else if (tf->cause == CAUSE_ILLEGAL_INSTRUCTION)
   {
     assert(tf->epc % 4 == 0);
-
+    int faulting_opcode = read_csr(stval);
     int* fssr;
     asm ("jal %0, 1f; fssr x0; 1:" : "=r"(fssr));
-
-    if (*(int*)tf->epc == *fssr)
+    if (faulting_opcode == *fssr)
       terminate(1); // FP test on non-FP hardware.  "succeed."
-    else
+    else 
       assert(!"illegal instruction");
     tf->epc += 4;
   }
   else if (tf->cause == CAUSE_FETCH_PAGE_FAULT || tf->cause == CAUSE_LOAD_PAGE_FAULT || tf->cause == CAUSE_STORE_PAGE_FAULT)
-    handle_fault(tf->badvaddr, tf->cause);
+    handle_fault(tf->badvaddr, tf->cause, tf);
   else
     assert(!"unexpected exception");
 
@@ -225,7 +274,10 @@ static void coherence_torture()
 
 void vm_boot(uintptr_t test_addr)
 {
+  cputstring ("Entered vm_boot \n");
   uint64_t random = ENTROPY;
+  unsigned int m_status = 0;
+
   if (read_csr(mhartid) > 0)
     coherence_torture();
 
@@ -277,9 +329,15 @@ void vm_boot(uintptr_t test_addr)
     (1 << CAUSE_USER_ECALL) |
     (1 << CAUSE_FETCH_PAGE_FAULT) |
     (1 << CAUSE_LOAD_PAGE_FAULT) |
-    (1 << CAUSE_STORE_PAGE_FAULT));
+    (1 << CAUSE_STORE_PAGE_FAULT) |
+    (1 << CAUSE_STORE_ACCESS) |
+    (1 << CAUSE_LOAD_ACCESS) |
+    (1 << CAUSE_ILLEGAL_INSTRUCTION));
+
+  m_status = read_csr(mstatus);
   // FPU on; accelerator on; vector unit on
-  write_csr(mstatus, MSTATUS_FS | MSTATUS_XS | MSTATUS_VS);
+  m_status |= (MSTATUS_FS | MSTATUS_XS | MSTATUS_VS);
+  write_csr(mstatus, m_status);
   write_csr(mie, 0);
 
   random = 1 + (random % MAX_TEST_PAGES);
