@@ -200,8 +200,11 @@ void handle_fault(uintptr_t addr, uintptr_t cause, trapframe_t* tf)
 void handle_trap(trapframe_t* tf)
 {
   if (trap_filter(tf)) {
-    cputstring("trap_filter returned true, trap cause \n");
+    cputstring("trap_filter returned true, trap cause ");
     printhex(tf->cause);
+    cputstring("\n epc ");
+    printhex(tf->epc);
+    cputstring("\n");
     /*
     * trap_filter returning true and
     * cause being ecall means, one of the test went wrong
@@ -215,6 +218,13 @@ void handle_trap(trapframe_t* tf)
       terminate(0xbaddeed);
     }
     pop_tf(tf);
+  } else {
+    cputstring("! trap_filter returned false, trap cause ");
+    printhex(tf->cause);
+    cputstring("\n epc ");
+    printhex(tf->epc);
+    cputstring("\n");
+
   }
 
   if (tf->cause == CAUSE_USER_ECALL)
