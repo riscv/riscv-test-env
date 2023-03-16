@@ -99,6 +99,9 @@
 #define MCONTROL_MATCH_MASK_LOW  4
 #define MCONTROL_MATCH_MASK_HIGH 5
 
+#define TCONTROL_MPTE       (1<<7)
+#define TCONTROL_MTE        (1<<3)
+
 #define MIP_USIP            (1 << IRQ_U_SOFT)
 #define MIP_SSIP            (1 << IRQ_S_SOFT)
 #define MIP_HSIP            (1 << IRQ_H_SOFT)
@@ -1718,6 +1721,7 @@
 #define CSR_TDATA1 0x7a1
 #define CSR_TDATA2 0x7a2
 #define CSR_TDATA3 0x7a3
+#define CSR_TCONTROL 0x7a5
 #define CSR_DCSR 0x7b0
 #define CSR_DPC 0x7b1
 #define CSR_DSCRATCH0 0x7b2
@@ -2679,6 +2683,7 @@ DECLARE_CSR(tselect, CSR_TSELECT)
 DECLARE_CSR(tdata1, CSR_TDATA1)
 DECLARE_CSR(tdata2, CSR_TDATA2)
 DECLARE_CSR(tdata3, CSR_TDATA3)
+DECLARE_CSR(tcontrol, CSR_TCONTROL)
 DECLARE_CSR(dcsr, CSR_DCSR)
 DECLARE_CSR(dpc, CSR_DPC)
 DECLARE_CSR(dscratch0, CSR_DSCRATCH0)
