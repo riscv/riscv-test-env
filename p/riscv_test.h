@@ -107,6 +107,13 @@
   .align 2;                                                             \
 1:
 
+#define INIT_RNMI                                                       \
+  la t0, 1f;                                                            \
+  csrw mtvec, t0;                                                       \
+  csrwi CSR_MNSTATUS, MNSTATUS_NMIE;                                    \
+  .align 2;                                                             \
+1:
+
 #define INIT_SATP                                                      \
   la t0, 1f;                                                            \
   csrw mtvec, t0;                                                       \
@@ -197,6 +204,7 @@ handle_exception:                                                       \
 reset_vector:                                                           \
         INIT_XREG;                                                      \
         RISCV_MULTICORE_DISABLE;                                        \
+        INIT_RNMI;                                                      \
         INIT_SATP;                                                      \
         INIT_PMP;                                                       \
         DELEGATE_NO_TRAPS;                                              \

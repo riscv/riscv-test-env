@@ -60,6 +60,8 @@ handle_reset:
   li x30, 0
   li x31, 0
 
+  INIT_RNMI
+
   la t0, trap_vector
   csrw mtvec, t0
   la sp, STACK_TOP - SIZEOF_TRAPFRAME_T
