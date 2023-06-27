@@ -23,12 +23,9 @@
 #define MSTATUS_TW          0x00200000
 #define MSTATUS_TSR         0x00400000
 #define MSTATUS_UFCFIEN     0x00800000 /* Zisslpcfi-.01 */
-#define MSTATUS_SFCFIEN     0x01000000 /* Zisslpcfi-.01 */
-#define MSTATUS_MFCFIEN     0x02000000 /* Zisslpcfi-.01 */
-#define MSTATUS_UBCFIEN     0x04000000 /* Zisslpcfi-.01 */
-#define MSTATUS_SBCFIEN     0x08000000 /* Zisslpcfi-.01 */
-#define MSTATUS_SPELP       0x10000000 /* Zisslpcfi-.01 */
-#define MSTATUS_MPELP       0x20000000 /* Zisslpcfi-.01 */
+#define MSTATUS_UBCFIEN     0x01000000 /* Zisslpcfi-.01 */
+#define MSTATUS_SPELP       0x02000000 /* Zisslpcfi-.01 */
+#define MSTATUS_MPELP       0x04000000 /* Zisslpcfi-.01 */
 #define MSTATUS32_SD        0x80000000
 #define MSTATUS_UXL         0x0000000300000000
 #define MSTATUS_SXL         0x0000000C00000000
