@@ -23,6 +23,11 @@
   RVTEST_VECTOR_ENABLE;                                                 \
   .endm
 
+#define RVTEST_RV64MV                                                   \
+  .macro init;                                                          \
+  RVTEST_MVECTOR_ENABLE;                                                 \
+  .endm
+
 #define RVTEST_RV32U                                                    \
   .macro init;                                                          \
   .endm
@@ -35,6 +40,11 @@
 #define RVTEST_RV32UV                                                   \
   .macro init;                                                          \
   RVTEST_VECTOR_ENABLE;                                                 \
+  .endm
+
+#define RVTEST_RV32MV                                                   \
+  .macro init;                                                          \
+  RVTEST_MVECTOR_ENABLE;                                                 \
   .endm
 
 #define RVTEST_RV64M                                                    \
@@ -148,6 +158,14 @@
 #define RVTEST_VECTOR_ENABLE                                            \
   li a0, (MSTATUS_VS & (MSTATUS_VS >> 1)) |                             \
          (MSTATUS_FS & (MSTATUS_FS >> 1));                              \
+  csrs mstatus, a0;                                                     \
+  csrwi fcsr, 0;                                                        \
+  csrwi vcsr, 0;
+
+#define RVTEST_MVECTOR_ENABLE                                           \
+  li a0, (MSTATUS_VS & (MSTATUS_VS >> 1)) |                             \
+         (MSTATUS_FS & (MSTATUS_FS >> 1)) |                             \
+         (MSTATUS_MPP);                                                 \
   csrs mstatus, a0;                                                     \
   csrwi fcsr, 0;                                                        \
   csrwi vcsr, 0;
