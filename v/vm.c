@@ -288,6 +288,7 @@ void vm_boot(uintptr_t test_addr)
   write_csr(satp, satp_value);
   if (read_csr(satp) != satp_value)
     assert(!"unsupported satp mode");
+  flush_page(DRAM_BASE);
 
   // Set up PMPs if present, ignoring illegal instruction trap if not.
   uintptr_t pmpc = PMP_NAPOT | PMP_R | PMP_W | PMP_X;
