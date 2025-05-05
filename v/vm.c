@@ -29,6 +29,7 @@ static void do_tohost(uint64_t tohost_value)
   tohost = tohost_value;
 }
 
+#define kaa2pa(aa) ((uintptr_t)(aa) & (uintptr_t)(~(-MEGAPAGE_SIZE)) | (uintptr_t)(DRAM_BASE))
 #define pa2kva(pa) ((void*)(pa) - DRAM_BASE - MEGAPAGE_SIZE)
 #define uva2kva(pa) ((void*)(pa) - MEGAPAGE_SIZE)
 
@@ -48,9 +49,9 @@ static void cputchar(int x)
   volatile int buff = x;
   syscall_struct[0] = SYS_write;
   syscall_struct[1] = 1;
-  syscall_struct[2] = (uintptr_t)&buff;
+  syscall_struct[2] = kaa2pa(&buff);
   syscall_struct[3] = 1;
-  do_tohost((uintptr_t)&syscall_struct);
+  do_tohost(kaa2pa(&syscall_struct));
   // Wait for response as struct has to be read by HTIF
   while(!fromhost);
 #else
