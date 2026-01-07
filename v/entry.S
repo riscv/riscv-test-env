@@ -10,7 +10,7 @@
 # define REGBYTES 4
 #endif
 
-#define STACK_TOP (_end + RISCV_PGSIZE * 4)
+#define STACK_SIZE (RISCV_PGSIZE * 4)
 
   .section ".text.init","ax",@progbits
   .globl _start
@@ -64,7 +64,9 @@ handle_reset:
 
   la t0, trap_vector
   csrw mtvec, t0
-  la sp, STACK_TOP - SIZEOF_TRAPFRAME_T
+  li t0, STACK_SIZE - SIZEOF_TRAPFRAME_T
+  la sp, _end
+  add sp, sp, t0
   csrr t0, mhartid
   slli t0, t0, 12
   add sp, sp, t0
